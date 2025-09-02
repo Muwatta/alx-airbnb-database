@@ -1,109 +1,98 @@
-# Task 2: Design Database Schema (DDL)
+# Database Schema for Airbnb Clone
 
 ## Overview
 
-In this task, we are creating the database schema for the ALX Airbnb-like database. The schema is designed to store data for users, properties, bookings, payments, reviews, and messages. This schema uses relational database principles with tables, primary keys, foreign keys, constraints, and indexes to ensure data integrity and optimize performance.
-
-### **Entities**
-
-The schema contains the following key entities:
-
-1. **User**: Represents users of the platform, including both guests and hosts. Each user has a unique identifier, name, email, password, and role (guest, host, or admin).
-2. **Property**: Represents properties listed by hosts. Each property is associated with a host and contains information about the property such as its name, description, location, and price.
-3. **Booking**: Represents the bookings made by guests for properties. Each booking is linked to a property and a user (guest).
-4. **Payment**: Represents payments made for bookings. Each payment is associated with a booking.
-5. **Review**: Represents reviews left by users (guests) for properties they stayed in. A review includes a rating (1-5) and a comment.
-6. **Message**: Represents private messages between users, either between guests and hosts or other users.
+This schema defines the structure for an Airbnb-like booking platform.  
+It includes tables for users, property listings, reservations, and reviews.  
+The schema enforces data integrity with primary keys, foreign keys, unique
+constraints, and indexes.
 
 ---
 
-## **Schema Design**
+## Schema Design
 
-Below is the SQL schema that defines the structure of the tables in the database:
+### **1. Users Table**
 
-### **SQL Code for Database Schema**
+Stores information about all users (hosts and guests).
 
-```sql
--- User Table
-CREATE TABLE User (
-    user_id UUID PRIMARY KEY,                    
-    first_name VARCHAR(100) NOT NULL,             
-    last_name VARCHAR(100) NOT NULL,              
-    email VARCHAR(100) NOT NULL UNIQUE,           
-    password_hash VARCHAR(255) NOT NULL,          
-    phone_number VARCHAR(15),                     
-    role ENUM('guest', 'host', 'admin') NOT NULL, 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
-);
+- `user_id` (PK) – Unique identifier for each user.
+- `full_name` – User’s full name.
+- `email` – Unique email address (used for login).
+- `password` – Encrypted password.
+- `phone_number` – Optional contact number.
+- `created_at` – Timestamp of account creation.
 
--- Property Table
-CREATE TABLE Property (
-    property_id UUID PRIMARY KEY,                 
-    host_id UUID,                                 
-    name VARCHAR(255) NOT NULL,                    
-    description TEXT NOT NULL,                     
-    location VARCHAR(255) NOT NULL,                
-    pricepernight DECIMAL(10, 2) NOT NULL,         
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, 
-    FOREIGN KEY (host_id) REFERENCES User(user_id)
-);
+---
 
--- Booking Table
-CREATE TABLE Booking (
-    booking_id UUID PRIMARY KEY,                   
-    property_id UUID,                              
-    user_id UUID,                                  
-    start_date DATE NOT NULL,                       
-    end_date DATE NOT NULL,                         
-    total_price DECIMAL(10, 2) NOT NULL,            
-    status ENUM('pending', 'confirmed', 'canceled') NOT NULL, 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
-    FOREIGN KEY (property_id) REFERENCES Property(property_id), 
-    FOREIGN KEY (user_id) REFERENCES User(user_id)
-);
+### **2. Listings Table**
 
--- Payment Table
-CREATE TABLE Payment (
-    payment_id UUID PRIMARY KEY,                    
-    booking_id UUID,                                
-    amount DECIMAL(10, 2) NOT NULL,                  
-    payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
-    payment_method ENUM('credit_card', 'paypal', 'stripe') NOT NULL, 
-    FOREIGN KEY (booking_id) REFERENCES Booking(booking_id)
-);
+Stores properties listed by hosts.
 
--- Review Table
-CREATE TABLE Review (
-    review_id UUID PRIMARY KEY,                     
-    property_id UUID,                              
-    user_id UUID,                                  
-    rating INT CHECK (rating >= 1 AND rating <= 5) NOT NULL, 
-    comment TEXT NOT NULL,                          
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
-    FOREIGN KEY (property_id) REFERENCES Property(property_id), 
-    FOREIGN KEY (user_id) REFERENCES User(user_id)
-);
+- `listing_id` (PK) – Unique identifier for each listing.
+- `host_id` (FK) – References `users.user_id`.
+- `title` – Short title of the property.
+- `description` – Detailed description of the property.
+- `price` – Price per night (must be non-negative).
+- `location` – Location of the property.
+- `created_at` – Timestamp when the listing was created.
 
--- Message Table
-CREATE TABLE Message (
-    message_id UUID PRIMARY KEY,                    
-    sender_id UUID,                                 
-    recipient_id UUID,                              
-    message_body TEXT NOT NULL,                     
-    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,     
-    FOREIGN KEY (sender_id) REFERENCES User(user_id), 
-    FOREIGN KEY (recipient_id) REFERENCES User(user_id)
-);
+Constraints:
 
--- Indexes for Performance Optimization
-CREATE INDEX idx_user_email ON User(email);
-CREATE INDEX idx_property_id ON Property(property_id);
-CREATE INDEX idx_booking_property_id ON Booking(property_id);
-CREATE INDEX idx_booking_user_id ON Booking(user_id);
-CREATE INDEX idx_payment_booking_id ON Payment(booking_id);
-CREATE INDEX idx_review_property_id ON Review(property_id);
-CREATE INDEX idx_review_user_id ON Review(user_id);
-CREATE INDEX idx_message_sender_id ON Message(sender_id);
-CREATE INDEX idx_message_recipient_id ON Message(recipient_id);
+- Foreign key ensures each listing belongs to a valid host.
+- `CHECK (price >= 0)` prevents invalid prices.
 
+---
+
+### **3. Reservations Table**
+
+Stores booking records made by guests.
+
+- `reservation_id` (PK) – Unique identifier for each reservation.
+- `listing_id` (FK) – References `listings.listing_id`.
+- `guest_id` (FK) – References `users.user_id`.
+- `check_in` – Start date of stay.
+- `check_out` – End date of stay (must be after `check_in`).
+- `status` – Booking status (`pending`, `confirmed`, etc.).
+- `created_at` – Timestamp of reservation creation.
+
+Constraints:
+
+- `CHECK (check_out > check_in)` ensures valid booking periods.
+- Foreign keys enforce valid guest and listing references.
+
+---
+
+### **4. Reviews Table**
+
+Stores reviews given by guests after completing a reservation.
+
+- `review_id` (PK) – Unique identifier for each review.
+- `reservation_id` (FK, UNIQUE) – Each reservation can only have one review.
+- `rating` – Integer score between 1 and 5.
+- `comment` – Optional review text.
+- `created_at` – Timestamp when the review was added.
+
+Constraints:
+
+- `CHECK (rating BETWEEN 1 AND 5)` enforces valid ratings.
+
+---
+
+## Indexes
+
+Indexes are created to improve query performance:
+
+- `idx_users_email` → Speeds up lookups by email.
+- `idx_listings_location` → Optimizes searches by location.
+- `idx_reservations_status` → Helps filter reservations by status.
+
+---
+
+## How to Run
+
+1. Open your SQL client (e.g., `psql`).
+2. Run the script:
+
+   ```bash
+   \i schema.sql
+   ```

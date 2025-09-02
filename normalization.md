@@ -1,19 +1,70 @@
-# Normalization Steps
+# Database Normalization for Airbnb Clone
 
-## 1. First Normal Form (1NF)
-- All columns contain atomic values, with no repeating groups or multi-valued attributes.
-- All tables in the schema already meet 1NF.
+## Objective
 
-## 2. Second Normal Form (2NF)
-- Each table is in 1NF.
-- All non-key attributes are fully dependent on the primary key.
-- The schema does not contain partial dependencies, so it is in 2NF.
+Ensure that the database schema is normalized to the **Third Normal Form (3NF)**
+by removing redundancies, ensuring atomicity, and maintaining data integrity.
 
-## 3. Third Normal Form (3NF)
-- Each table is in 2NF.
-- There are no transitive dependencies between non-key attributes.
-- The schema adheres to 3NF, ensuring that all attributes depend only on the primary key.
+---
 
-## Conclusion
-The database schema is well-designed and already meets the requirements for 3NF. There are no redundancies or unnecessary dependencies.
+## Step 1: First Normal Form (1NF)
 
+**Rule:** Eliminate repeating groups; ensure atomic values.
+
+- Each table has a **primary key**.
+- All attributes contain **atomic values** (no arrays, no multivalued columns).
+- Example adjustment:
+  - Instead of storing multiple phone numbers in a single column, create a
+    separate `user_phones` table.
+
+---
+
+## Step 2: Second Normal Form (2NF)
+
+**Rule:** Eliminate partial dependencies (non-key attributes depending on part
+of a composite key).
+
+- If a table has a **composite primary key**, all non-key attributes must depend
+  on the whole key.
+- Adjustment:
+  - For a `bookings` table with `(user_id, listing_id)` as a composite key,
+    ensure fields like `user_email` or `listing_title` are **not stored here**
+    (they belong in `users` and `listings`).
+
+---
+
+## Step 3: Third Normal Form (3NF)
+
+**Rule:** Eliminate transitive dependencies (non-key attributes depending on
+other non-key attributes).
+
+- Ensure every non-key attribute depends only on the **primary key**.
+- Adjustment:
+  - If `listings` table had `city_name` and `country_name`, these should be
+    moved into a separate `locations` table, linked via `location_id`.
+
+---
+
+## Final Normalized Schema (3NF)
+
+- **users**: `id`, `name`, `email`, `password`, `created_at`
+- **user_phones**: `id`, `user_id`, `phone_number`
+- **listings**: `id`, `host_id (FK users)`, `title`, `description`, `price`,
+  `location_id`
+- **locations**: `id`, `city`, `country`
+- **bookings**: `id`, `user_id (FK users)`, `listing_id (FK listings)`,
+  `start_date`, `end_date`
+- **reviews**: `id`, `user_id (FK users)`, `listing_id (FK listings)`, `rating`,
+  `comment`
+
+---
+
+## Benefits of 3NF
+
+- Eliminates redundancy.
+- Improves data integrity.
+- Makes schema easier to scale.
+
+---
+
+✅ Database schema is now normalized to **Third Normal Form (3NF)**.
